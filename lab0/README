@@ -1,0 +1,30 @@
+lab0
+lab0.c
+	Source code for a program that copies input from a file to an output
+	file. Accepts command line arguments for --input=filename,
+	--output=filename, --segfault, and --catch. 
+	--input=filename will use filename as the standard input to copy from.
+	--output=filename will create filename and copy standard input to there.
+	--segfault will force a segmentation fault.
+	--catch will find and report the segmentation fault.
+Makefile
+	default: builds the lab0 executable
+	check: runs smoke-test
+	test includes testing with valid input and output arguments
+	     	      testing with an invalid input
+		      testing with an invalid output
+		      testing if a segmentation is actually forced
+		      testing if --catch successfully reports a segmentation fault
+	clean: deletes makefile-created files
+	dist: builds the distribution tarball
+stacktrace.png
+	Running under gdb lab0 with --segfault forces a segmentation fault and a
+	stack backtrace is shown.
+nullpointer.png
+	Running under gdb lab0 with --segfault, a breakpoint is set at the line
+	where the segmentation fault is forced and the pointer is inspected to
+	confirm it is NULL.
+
+Referenced example code from
+https://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Option-Example.html#Getopt-Long-Option-Example 
+for using getopt_long

@@ -1,0 +1,17 @@
+Michael Yu
+ID: 704637121
+README:
+	Contains basic information about this set of files.
+lab3b.py:
+	A python script to analyze 6 given csv files about an EXT2 File
+	system and list any errors such as: unallocated blocks, duplicately
+	allocated blocks, unallocated inodes, missing inodes, incorrect link
+	counts, incorrect directory entries, and invalid block pointers.
+Makefile:
+	default: does nothing, use make run instead
+	run: runs the python script lab3b.py
+	clean: removes files created by the makefile/script
+	dist: tars necessary files for submission
+Problems:
+My implementation was not tested extensively especially on indirect
+blocks. There may be errors there when using different .csv files. 

@@ -1,0 +1,266 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <math.h>
+#include <mraa/aio.h>
+#include <sys/time.h>
+#include <string.h>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#define BUFSIZE 1024
+
+FILE *logfile;
+BIO * bio;
+int T = 3;
+int sockfd;
+int cont = 1;
+int skip = 1;
+int use_F = 1;
+/* 
+ *  * error - wrapper for perror
+ *   */
+void error(char *msg) {
+	perror(msg);
+	exit(0);
+}
+
+float convert_reading(int reading)
+{
+	int B = 4275;
+	float R = 1023.0/((float) reading)-1.0;
+	R = 100000.0*R;
+	float temperature=1.0/(log(R/100000.0)/B+1/298.15)-273.15;
+	if (use_F)
+		temperature = temperature * 9 / 5 + 32;
+	return temperature;
+}
+
+void *receive_thread(void *x)
+{
+	//fprintf(stdout, "receive\n");
+
+	int n;
+	//printf("about to enter loop\n");
+	while (cont)
+	{
+
+		//logfile = fopen("abc.txt", "a+");
+		char buff[50];
+		memset(buff,0, 50);
+		//printf("before read\n");	
+		
+		n = BIO_read(bio, buff, 49);
+		
+		if (n == 0)
+		{
+			//fprintf(stderr, "This is a closed connection");
+			continue;
+		}
+		else if (n < 0)
+		{
+			//fprintf(stderr, "Error reading from bio");
+			continue;
+		}
+			
+		if (strcmp(buff, "OFF") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+			printf("%s\n", buff);
+			exit(0);
+		}
+		else if(strcmp(buff, "START") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+			skip = 1;
+		}
+		else if(strcmp(buff, "STOP") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+			skip = 0;
+		}
+		else if(strcmp(buff, "SCALE=F") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+			use_F = 1;
+		}
+		else if(strcmp(buff, "SCALE=C") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+			use_F = 0;
+		}
+		else if(strcmp(buff, "DISP Y") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+		}
+		else if(strcmp(buff, "DISP N") == 0)
+		{
+			fprintf(logfile, "%s\n", buff);
+		}
+		else if(strncmp(buff, "PERIOD=", 7) == 0)
+		{	int i = 7;
+			while(buff[i] == '0')
+				i++;
+			if(buff[i] == '\0')
+				fprintf(logfile, "%s I\n", buff);
+			else
+			{
+				long num = strtol(buff+i, NULL, 10);
+				if (num <= 0 || num > 36000)
+					fprintf(logfile, "%s I\n", buff);
+				else
+				{
+					fprintf(logfile, "%s\n", buff);
+					T = (int)num;
+				}
+			}
+		}
+		else
+		{
+			fprintf(logfile, "%s I\n", buff);
+		}
+		printf("%s\n", buff);
+
+		fflush(logfile);
+		//fclose(logfile);
+
+	}
+	return NULL;
+}
+
+void *send_thread(void *x)
+{
+	//printf("sendthread");
+	uint16_t value;
+	mraa_aio_context tmpr;
+	tmpr = mraa_aio_init(0);
+	int n;
+	char buf[10];
+	memset(buf, 0, 10);
+	strcpy(buf, "704637121");
+	char sendbuf[50];
+	//n = write(sockfd, buf, strlen(buf));
+	if(BIO_write(bio, buf, 9) <= 0)
+		error("Failed write");
+	
+	//logfile = fopen("part2_log.txt", "a+");
+	while (cont)
+	{
+		if (skip)
+		{
+			value = mraa_aio_read(tmpr);
+			float converted_tmpr = convert_reading(value);
+			time_t current_time = time(NULL);
+			struct tm *formatted_time;
+			formatted_time = localtime(&current_time);
+			char time_str[10];
+			memset(time_str, 0, 10);
+			strftime(time_str, 9, "%H:%M:%S", formatted_time);
+			memset(sendbuf, 0, 50);
+			strcpy(sendbuf, "704637121 TEMP=");
+			sprintf(sendbuf+15, "%.1f", converted_tmpr);
+			fprintf(logfile, "%s %.1f\n", time_str, converted_tmpr);
+			printf("%s\n", sendbuf);	
+			n = BIO_write(bio,sendbuf, 19);
+			if (n < 0)
+				error("Error writing to bio");
+
+			fflush(logfile);
+		}
+		//printf("send thread.\n");
+		sleep(T);
+	}
+
+	//fclose(logfile);
+	return NULL;
+}
+
+int main(int argc, char **argv)
+{
+	int portno, n;
+	struct sockaddr_in serveraddr;
+	struct hostent *server;
+	char *hostname;
+	char buf[BUFSIZE];
+	
+	SSL_CTX *ctx;
+	SSL *ssl;
+	//printf("hello\n");
+	logfile = fopen("lab4_3.log", "w+");
+	if (logfile == NULL)
+		fprintf(stderr, "Error creating logfile.\n");
+	/* check command line arguments */
+	if (argc != 3) {
+		fprintf(stderr,"usage: %s <hostname> <port>\n", argv[0]);
+		exit(0);
+	}
+	hostname = argv[1];
+	portno = atoi(argv[2]);
+
+	ERR_load_BIO_strings();
+	SSL_load_error_strings();
+	OpenSSL_add_all_algorithms();
+	SSL_library_init();
+	ctx = SSL_CTX_new(SSLv23_client_method());
+
+	//load trust store
+	if (! SSL_CTX_load_verify_locations(ctx, "TrustStore.pem", NULL))
+		printf("Error with TrustStore.pem.");
+
+	//setup connection
+	bio = BIO_new_ssl_connect(ctx);
+	BIO_get_ssl(bio, & ssl);
+	SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
+	
+	//printf("starting connection\n");
+	BIO_set_conn_hostname(bio, "r01.cs.ucla.edu:17000");
+	//printf("actually connected\n");
+	if (BIO_do_connect(bio) <= 0)
+		printf("Error connecting with BIO.\n");
+	//printf("connect did not hang\n");
+	if (SSL_get_verify_result(ssl) != X509_V_OK)
+		printf("Certificate verification error.\n");
+	//printf("starting threads\n");
+	pthread_t sending_thread;
+	pthread_t receiving_thread;
+
+	if(pthread_create(&sending_thread, NULL, send_thread, NULL))
+	{
+		fprintf(stderr, "Error creating thread\n");
+		return 1;
+	}
+
+	if(pthread_create(&receiving_thread, NULL, receive_thread, NULL))
+	{
+		fprintf(stderr, "Error creating thread\n");
+		return 2;
+	}
+
+
+	if(pthread_join(sending_thread, NULL))
+	{
+		fprintf(stderr, "Error joining threads\n");
+		return 1;
+	}
+
+
+	if(pthread_join(receiving_thread, NULL))
+	{
+		fprintf(stderr, "Error joining threads\n");
+		return 2;
+	}
+	
+	//printf("closing socket");
+	fclose(logfile);
+	SSL_CTX_free(ctx);
+	//close(sockfd);
+	BIO_free_all(bio);
+	return 0;
+}

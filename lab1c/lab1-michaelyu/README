@@ -1,0 +1,55 @@
+CS111 lab1c
+Michael Yu: 704637121
+
+Limitations:
+If --wait is not an option it is possible that the commands run at varying times
+and that it is possible for the parent process to finish the program while
+the child processes are still running. This can lead to unintended behavior.
+It will also result in no printing of exit codes.
+
+Right now simpsh only exits with 0 which signals a success or 1 which signals an error
+
+The Makefile supports
+make: to build the executable
+make clean: to delete files created by the makefile
+make dist: to create a .tar for submitting
+make check: to runs test.sh which has 3 test cases for simpsh mainly testing 
+the --profile option
+
+An example command:
+simpsh \
+  --rdonly a \
+  --pipe \
+  --pipe \
+  --creat --trunc --wronly c \
+  --creat --append --wronly d \
+  --command 3 5 6 tr A-Z a-z \
+  --command 0 2 6 sort \
+  --command 1 4 6 cat b - \
+  --wait
+
+Should output:
+0 sort
+0 cat b -
+0 tr A-Z a-z
+
+Benchmarked by 3 commands in bash, dash, and simpsh
+
+bash/dash 1: cat a0.txt | grep [A-Za-z] | sort > benchmark1.txt
+
+simpsh 1: ./simpsh --rdonly a0.txt --creat --wronly benchmark1.txt \
+       	 --creat --wronly benchmark1err.txt --pipe --pipe --profile \
+	 --command 0 4 2 cat --command 3 6 2 grep [A-Za-z] \
+	 --command 5 1 2 sort --wait
+
+bash/dash 2: cat a0.txt | tr A-Z a-z | uniq > benchmark2.txt
+
+simpsh 2: ./simpsh --rdonly a0.txt --creat --wronly benchmark2.txt \
+       	 --creat --wronly benchmark2err.txt
+
+bash/dash 3: cat a0.txt | uniq | wc > benchmark3.txt
+
+simpsh 3: ./simpsh --rdonly a0.txt --creat --wronly benchmark3.txt \
+	 --creat --wronly benchmark3err.txt --pipe --pipe \
+	 --profile --command 0 4 2 cat --command 3 6 2 uniq \
+	 --command 5 1 2 wc --wait

@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <mraa/aio.h>
+#include <sys/time.h>
+#include <string.h>
+
+float convert_reading(int reading)
+{
+	int B = 4275;
+	float R = 1023.0/((float) reading)-1.0;
+	R = 100000.0*R;
+	float temperature=1.0/(log(R/100000.0)/B+1/298.15)-273.15;
+	temperature = temperature * 9 / 5 + 32;
+	return temperature;
+}
+int main()
+{
+	uint16_t value;
+	mraa_aio_context tmpr;
+	tmpr = mraa_aio_init(0); 
+	FILE * logfile; 
+	
+	logfile = fopen("part1_log.txt", "w");
+	while(1)
+	{
+		//logfile = fopen("part1_log.txt", "a+");
+		if (logfile == NULL)
+			printf("Error creating log file.");
+		value = mraa_aio_read(tmpr);
+		time_t current_time = time(NULL);
+		struct tm *formatted_time;
+		formatted_time = localtime(&current_time);
+		char time_str[10];
+		memset(time_str, 0, 10);
+		strftime(time_str, 9, "%H:%M:%S", formatted_time);
+		float converted_tmpr = convert_reading(value);
+		fprintf(stdout, "%s %.1f\n", time_str, converted_tmpr);
+		fprintf(logfile, "%s %.1f\n", time_str, converted_tmpr);
+		fflush(logfile);
+		//fclose(logfile);
+		sleep(1);
+	}
+	
+	//fflush(logfile);
+	fclose(logfile);
+	mraa_aio_close(tmpr);
+	return 0;
+}

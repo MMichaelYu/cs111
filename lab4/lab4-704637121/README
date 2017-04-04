@@ -1,0 +1,41 @@
+Michael Yu 704637121 Lab 4
+README:
+	Contains basic information about this set of files.
+Makefile:
+	default: compiles lab4_1, lab4_2, lab4_3
+	clean: removes any files created by the Makefile
+	dist: creates tarball for grading
+lab4_1.log:
+	Contains temperature readings and timestamps from the Edison board and
+sensor for at least 60 seconds, every second.
+lab4_2.log:
+	Contains temperature readings, timestamps, and commands received from
+the server. Temperature readings come from the sensor attached to the Edison
+board.
+lab4_3.log:
+	Contains temperature readings, timestamps, and commands received from
+the server. Temperature readings come from the sensor attached to the Edison
+Board.
+lab4_part1.c:
+	Use Makefile command 'make' to compile into executable lab4_1. This
+will use the Edison board and temperature sensor to log temperature recordings
+in F every second into a file named lab4_1.log. Timestamps are included for
+every reading. 
+lab4_part2.c:
+	Use Makefile command 'make' to compile into executable lab4_2. This
+executable takes in a server and port number. For example './lab4_2
+r01.cs.ucla.edu 16000'. It connects to that server and port and sends
+temperature readings and my UID to that server using a thread. It also
+receives and follows commands from that server using another thread. Commands
+include START STOP OFF SCALE=C/F PERIOD=####. Temperature recordings,
+timestamps, and command received from the server are logged into a file named
+lab4_2.log.
+lab4_part3.c:
+	Use Makefile command 'make' to compile into executable lab4_3. This is
+the same as lab4_part2.c's purpose but uses SSL/TLS to protect communications.
+The logs are stored into a file named lab4_3.log.
+TrustStore.pem:
+	Certificate for verification. Not necessary for my implementation.
+The server and port is not hardcoded in lab4_part2.c and lab4_2. However the
+server and port is hardcoded in lab4_part3.c and lab4_3. 
+

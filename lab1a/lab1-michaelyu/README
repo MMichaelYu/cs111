@@ -1,0 +1,13 @@
+CS111 lab1a
+Michael Yu: 704637121
+
+Limitations:
+Currently a segmentation fault occurs for test case 7 when running make check
+
+Right now simpsh only exits with 0 which is a success or 1 which is an error
+
+The Makefile supports
+make: to build the executable
+make clean: to delete files created by the makefile
+make dist: to create a .tar for submitting
+make check: to runs test.sh which has 10 test cases for simpsh

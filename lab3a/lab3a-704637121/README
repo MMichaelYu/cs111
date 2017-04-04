@@ -1,0 +1,17 @@
+Michael Yu UID:704637121
+Files:
+Makefile
+	default:
+	compiles the lab3a.c file
+	dist:
+	tarballs the c file, Makefile, and README
+	clean:
+	removes files created by the Makefile such as .csv files and executables
+lab3a.c
+	C file for examining a EXT2 file system. This can be compiled with the
+	make command. Information about a given file system is contained in
+	files named super.csv, inode.csv, indirect.csv, group.csv,
+	directory.csv, and bitmap.csv. 
+README
+	Contains basic information about this set of files.
+

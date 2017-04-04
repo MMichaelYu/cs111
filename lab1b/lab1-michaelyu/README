@@ -1,0 +1,31 @@
+CS111 lab1b
+Michael Yu: 704637121
+
+Limitations:
+The program simpsh runs as expected and the 10 test cases in test.sh all work.
+The test cases test a variety of the options possible within simpsh. 
+
+Right now simpsh only exits with 0 which signals a success or 1 which signals an error
+
+The Makefile supports
+make: to build the executable
+make clean: to delete files created by the makefile
+make dist: to create a .tar for submitting
+make check: to runs test.sh which has 10 test cases for simpsh
+
+An example command:
+simpsh \
+  --rdonly a \
+  --pipe \
+  --pipe \
+  --creat --trunc --wronly c \
+  --creat --append --wronly d \
+  --command 3 5 6 tr A-Z a-z \
+  --command 0 2 6 sort \
+  --command 1 4 6 cat b - \
+  --wait
+
+Should output:
+0 sort
+0 cat b -
+0 tr A-Z a-z
